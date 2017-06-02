@@ -7,7 +7,7 @@ admin.initializeApp(functions.config().firebase);
 /** @namespace event.params.chatId */
 /** @namespace object.creatorId */
 /** @namespace object.otherId */
-exports.createChat = functions.database.ref("chats/{chatId}")
+exports.createChat = functions.database.ref("userChats/{chatId}")
     .onWrite(event => {
         if (!event.data.exists()) {
             return Promise.resolve(() => null);
@@ -24,14 +24,25 @@ exports.createChat = functions.database.ref("chats/{chatId}")
                 otherUser.name = snapshot.child("name").val();
                 otherUser.profilePicture = snapshot.child("profilePicture").val();
                 chatObject[otherId] = otherUser;
+                return chatObject;
             })
-            .then(() => {
-                return admin.database().ref(`userChats/${otherId}/${chatId}`).set(chatObject);
+            .then((chatObject) => {
+                admin.database().ref(`userChats/${otherId}/${chatId}`).set(chatObject);
+                return Promise.resolve(chatObject);
             })
-            .then(() => {
+            .then((chatObject) => {
                 return admin.database().ref(`userChats/${creatorId}/${chatId}`).set(chatObject);
             })
-            .then(() => {
-                return admin.database().ref(`chats/${chatId}`).set(chatObject);
-            });
+    });
+
+exports.createMessage = functions.database.ref("userMessages/{uid}/{chatId}/{messageId}")
+    .onWrite(event => {
+        if(!event.data.exists()) {
+            return Promise.resolve(() => null);
+        }
+
+        const chatId = event.params.chatId;
+        const messageId = event.params.messageId;
+        const object = event.data.val();
+        return admin.database().ref(`chats/${chatId}/${messageId}`).set(object);
     });
