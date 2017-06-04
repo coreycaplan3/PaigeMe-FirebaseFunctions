@@ -1,13 +1,12 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const console = require('debug');
 
 admin.initializeApp(functions.config().firebase);
 
 /** @namespace event.params.chatId */
 /** @namespace object.creatorId */
 /** @namespace object.otherId */
-exports.createChat = functions.database.ref("userChats/{chatId}")
+exports.createChat = functions.database.ref("userChats/{userId}/{chatId}")
     .onWrite(event => {
         if (!event.data.exists()) {
             return Promise.resolve(() => null);
@@ -26,11 +25,10 @@ exports.createChat = functions.database.ref("userChats/{chatId}")
                 chatObject[otherId] = otherUser;
                 return chatObject;
             })
-            .then((chatObject) => {
-                admin.database().ref(`userChats/${otherId}/${chatId}`).set(chatObject);
-                return Promise.resolve(chatObject);
+            .then(() => {
+                return admin.database().ref(`userChats/${otherId}/${chatId}`).set(chatObject);
             })
-            .then((chatObject) => {
+            .then(() => {
                 return admin.database().ref(`userChats/${creatorId}/${chatId}`).set(chatObject);
             })
     });
